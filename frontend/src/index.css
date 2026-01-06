@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 1. 全域背景設定 (深色模式) */
+body {
+    background-color: #0f172a; /* Slate-900 */
+    color: #e2e8f0;            /* Slate-200 */
+}
+
+/* 2. 職業選擇按鈕的特效 (這裡就是按鈕顏色的關鍵！) */
+.class-btn {
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+}
+
+/* 選中時的樣子 (暗紅色發光) */
+.class-btn.active {
+    background-color: #7f1d1d; /* Red-900 */
+    border-color: #ef4444;     /* Red-500 */
+    color: white;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+}
+
+/* 沒選中時的樣子 (深灰色) */
+.class-btn.inactive {
+    background-color: #1e293b; /* Slate-800 */
+    border-color: #334155;     /* Slate-700 */
+    color: #94a3b8;            /* Slate-400 */
+}
+
+.class-btn.inactive:hover {
+    background-color: #334155;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* 3. 自定義 Diablo 風格邊框 */
+.diablo-border {
+    border: 1px solid #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+.section-header {
+    border-bottom: 1px solid #334155;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+/* 4. 讓下拉選單的捲軸好看一點 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+}
