@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 // --- 更新日誌內容 (在這裡修改文字) ---
 const UPDATE_LOG = `
-
+2026/1/6 新增更新日誌功能，未來每次更新都會記錄在這裡！
 `;
 // --- 資料庫 (僅用於顯示選單) ---
 const COMMON_BASE = [];
@@ -509,7 +509,7 @@ function App() {
     useEffect(() => {
         const fetchScore = async () => {
             try {
-                const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "";
+                const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
                 // 定義一個小工具：把 "空字串" 轉成 null，把 "文字數字" 轉成真的數字
                 const clean = (item) => ({
                     ...item,
