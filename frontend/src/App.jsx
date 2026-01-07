@@ -101,7 +101,7 @@ function App() {
     const [temperList, setTemperList] = useState([]);
     const [target, setTarget] = useState(() => { const saved = localStorage.getItem("d4_target_v8"); return saved ? JSON.parse(saved) : DEFAULT_TARGET; });
     const [drop, setDrop] = useState({ itemPower: 800, baseAffixes: [{name:"",isGA:false,value:""},{name:"",isGA:false,value:""},{name:"",isGA:false,value:""}], temperAffixes: [{name:"",value:""},{name:"",value:""}], aspect: { name: "", value: "" } });
-    const [result, setResult] = useState({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", analysis: [], isBrick: false });
+    const [result, setResult] = useState({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
     const [showSaveToast, setShowSaveToast] = useState(false);
     const [loading, setLoading] = useState(false); // 新增 Loading 狀態
     const firstRender = useRef(true);
@@ -159,7 +159,7 @@ function App() {
             }
         } catch (err) {
             console.error(err);
-            setResult(prev => ({ ...prev, tierLabel: "後端離線", analysis: ["請確認 python main.py 是否執行中 (或稍等1分鐘讓雲端喚醒)"] }));
+            setResult(prev => ({ ...prev, tierLabel: "後端離線", matched_affixes: ["請確認 python main.py 是否執行中 (或稍等1分鐘讓雲端喚醒)"] }));
         }
         setLoading(false);
     };
@@ -170,7 +170,7 @@ function App() {
     const fillMaxAspect = () => { if (target.aspect.max) handleDropChange('aspect', null, 'value', target.aspect.max); };
     const resetDrop = () => { 
         setDrop({ itemPower: 800, baseAffixes: [{name:"",isGA:false,value:""},{name:"",isGA:false,value:""},{name:"",isGA:false,value:""}], temperAffixes: [{name:"",value:""},{name:"",value:""}], aspect: { name: "", value: "" } });
-        setResult({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", analysis: [], isBrick: false });
+        setResult({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
     };
 
     return (
@@ -222,7 +222,7 @@ function App() {
                 <div className="w-full md:w-2/3 bg-slate-900/50 p-4 rounded border border-slate-700/50">
                     <div className="text-xs text-slate-500 mb-2 text-center">💡 小撇步：點擊下方的詞綴，可以模擬 S11 精鑄 (Q25/晉階) 喔！</div>
                     <ul className="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto pr-2">
-                        {result.analysis.map((log, idx) => (
+                        {result.matched_affixes?.map((log, idx) => (
                             <MasterworkingItem key={idx} text={log} />
                         ))}
                     </ul>
