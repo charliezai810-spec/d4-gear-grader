@@ -3,6 +3,86 @@ import { useState, useEffect, useRef } from 'react';
 const UPDATE_LOG = `
 2026/1/6 新增更新日誌功能，未來每次更新都會記錄在這裡！
 `;
+// --- S11 精鑄模擬元件 (Quality 25 機制) ---
+const MasterworkingItem = ({ text }) => {
+    // 狀態: 0=無, 1=品質滿級(Q25), 2=晉階加成(Capstone)
+    const [state, setState] = useState(0); 
+
+    const extractNumber = (str) => {
+        const match = str.match(/(\d+(\.\d+)?)/);
+        return match ? parseFloat(match[0]) : null;
+    };
+
+    const baseVal = extractNumber(text);
+    
+    if (baseVal === null) return <li className="text-slate-300">{text}</li>;
+
+    const calculateS11 = (base, currentState) => {
+        let multiplier = 1.0;
+        
+        if (currentState === 1) {
+            // Q25: 每級+1%，共25級 -> +25%
+            multiplier = 1.25;
+        } else if (currentState === 2) {
+            // Capstone: Q25基礎(25%) + 晉階加成(50%) -> +75%
+            multiplier = 1.75;
+        }
+        
+        return Math.floor(base * multiplier);
+    };
+
+    const newVal = calculateS11(baseVal, state);
+    const newText = text.replace(baseVal.toString(), newVal.toString());
+
+    // S11 視覺風格設定
+    const styles = [
+        { 
+            label: "", 
+            color: "text-slate-300", 
+            bg: "" 
+        }, // 0: 原味
+        { 
+            label: "Q25", 
+            color: "text-blue-400 font-bold", 
+            bg: "bg-blue-900/30",
+            icon: "💎" 
+        }, // 1: 品質滿級 (+25%)
+        { 
+            label: "Capstone", 
+            color: "text-orange-500 font-bold", 
+            bg: "bg-orange-900/30",
+            icon: "🔥" 
+        }  // 2: 晉階大獎 (+75%)
+    ];
+
+    const currentStyle = styles[state];
+
+    return (
+        <li 
+            onClick={() => setState((prev) => (prev + 1) % 3)} // 0->1->2->0 循環
+            className={`cursor-pointer select-none transition-all duration-200 px-2 py-1 rounded hover:bg-slate-800 ${currentStyle.bg} flex items-center justify-between group border border-transparent hover:border-slate-600`}
+            title="點擊模擬 S11 精鑄 (Quality 25)"
+        >
+            <span className={currentStyle.color}>
+                {newText}
+            </span>
+            
+            {/* 狀態標籤 */}
+            {state > 0 && (
+                <span className="text-xs ml-2 font-mono border border-white/10 px-1 rounded bg-black/20">
+                    {currentStyle.icon} {currentStyle.label}
+                </span>
+            )}
+            
+            {/* 提示文字 */}
+            {state === 0 && (
+                <span className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    S11 模擬 ⚒️
+                </span>
+            )}
+        </li>
+    );
+};
 // --- 資料庫 (僅用於顯示選單) ---
 const COMMON_BASE = [];
 const CLASS_DB = {
