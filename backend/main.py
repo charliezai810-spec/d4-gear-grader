@@ -85,7 +85,7 @@ async def calculate_score(data: GearInput):
         if is_pass:
             earned_score += weight
             ga_tag = "(GA)" if hasattr(drop_item, 'isGA') and drop_item.isGA else ""
-            log.append(f"✅ [{type_name}] {name}: 達標 {ga_tag}")
+            log.append(f"✅ [{type_name}] {name} +{d_val}: 達標 {ga_tag}")
         else:
             log.append(f"⚠️ [{type_name}] {name}: {', '.join(issues)}")
 
