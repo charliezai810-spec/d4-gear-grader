@@ -3,9 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 // --- 更新日誌內容 ---
 const UPDATE_LOG = `
 2026/1/7 
-- 🔥 新增 S11 精鑄模擬系統 (Masterworking)
-  (點擊評分結果的詞綴，可切換 Q25 / Capstone 數值)
-- 🔘 改回「手動計算」模式，增加計算按鈕
+- 🐛 修復評語不顯示的問題 (變數名稱同步)
+- 🔥 S11 精鑄模擬系統正常運作中
 `;
 
 // --- S11 精鑄模擬元件 ---
@@ -101,9 +100,12 @@ function App() {
     const [temperList, setTemperList] = useState([]);
     const [target, setTarget] = useState(() => { const saved = localStorage.getItem("d4_target_v8"); return saved ? JSON.parse(saved) : DEFAULT_TARGET; });
     const [drop, setDrop] = useState({ itemPower: 800, baseAffixes: [{name:"",isGA:false,value:""},{name:"",isGA:false,value:""},{name:"",isGA:false,value:""}], temperAffixes: [{name:"",value:""},{name:"",value:""}], aspect: { name: "", value: "" } });
+    
+    // 🔥 重要修正：這裡改用 matched_affixes 來接資料 🔥
     const [result, setResult] = useState({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
+    
     const [showSaveToast, setShowSaveToast] = useState(false);
-    const [loading, setLoading] = useState(false); // 新增 Loading 狀態
+    const [loading, setLoading] = useState(false);
     const firstRender = useRef(true);
 
     useEffect(() => {
@@ -122,7 +124,6 @@ function App() {
         return () => clearTimeout(t);
     }, [target]);
 
-    // 🔥 這是計算函式 (手動觸發) 🔥
     const calculateScore = async () => {
         setLoading(true);
         setResult(prev => ({ ...prev, tierLabel: "計算中..." }));
@@ -152,6 +153,7 @@ function App() {
             });
 
             if (res.ok) {
+                // 後端回傳的欄位是 matched_affixes，現在前端也是 matched_affixes，終於對上了！
                 setResult(await res.json());
             } else {
                 console.error("Server Error:", res.status);
@@ -159,6 +161,7 @@ function App() {
             }
         } catch (err) {
             console.error(err);
+            // 🔥 重要修正：這裡的錯誤訊息也同步改名 🔥
             setResult(prev => ({ ...prev, tierLabel: "後端離線", matched_affixes: ["請確認 python main.py 是否執行中 (或稍等1分鐘讓雲端喚醒)"] }));
         }
         setLoading(false);
@@ -170,6 +173,7 @@ function App() {
     const fillMaxAspect = () => { if (target.aspect.max) handleDropChange('aspect', null, 'value', target.aspect.max); };
     const resetDrop = () => { 
         setDrop({ itemPower: 800, baseAffixes: [{name:"",isGA:false,value:""},{name:"",isGA:false,value:""},{name:"",isGA:false,value:""}], temperAffixes: [{name:"",value:""},{name:"",value:""}], aspect: { name: "", value: "" } });
+        // 🔥 重要修正：重置時也要清空 matched_affixes 🔥
         setResult({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
     };
 
@@ -195,7 +199,7 @@ function App() {
                     <div className="mb-6 space-y-2"><h3 className="text-sm text-slate-400 font-bold text-yellow-500">⚒️ 鑑定回火</h3>{[0,1].map(i => (<div key={i} className="grid grid-cols-12 gap-2 items-center"><div className="col-span-6 relative"><SearchableSelect options={temperList} placeholder="(未回火)" value={drop.temperAffixes[i].name} onChange={v=>handleDropChange('temperAffixes',i,'name',v)} /></div><div className="col-span-6 flex gap-1"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-yellow-400 font-bold" placeholder="Val" value={drop.temperAffixes[i].value} onChange={e=>handleDropChange('temperAffixes',i,'value',e.target.value)}/><button onClick={()=>fillMax('temperAffixes', i)} className="bg-slate-700 hover:bg-slate-600 text-xs text-white px-2 rounded">MAX</button></div></div>))}</div>
                     <div className="space-y-2 border-t border-slate-700 pt-4"><h3 className="text-sm text-orange-400 font-bold">🔥 鑑定特效</h3><div className="grid grid-cols-12 gap-2 items-center"><div className="col-span-6"><span className="text-sm text-gray-500 italic block p-2">對應左側特效數值</span></div><div className="col-span-6 flex gap-1"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-orange-400 font-bold" placeholder="Val" value={drop.aspect.value} onChange={e=>handleDropChange('aspect',null,'value',e.target.value)}/><button onClick={fillMaxAspect} className="bg-slate-700 hover:bg-slate-600 text-xs text-white px-2 rounded">MAX</button></div></div></div>
                 
-                    {/* 🔥 這裡就是你要的按鈕！ 🔥 */}
+                    {/* 按鈕區域 */}
                     <div className="mt-6">
                         <button 
                             onClick={calculateScore} 
@@ -221,6 +225,8 @@ function App() {
                 
                 <div className="w-full md:w-2/3 bg-slate-900/50 p-4 rounded border border-slate-700/50">
                     <div className="text-xs text-slate-500 mb-2 text-center">💡 小撇步：點擊下方的詞綴，可以模擬 S11 精鑄 (Q25/晉階) 喔！</div>
+                    
+                    {/* 🔥 這裡就是關鍵修正：改用 matched_affixes，並加上問號保護 🔥 */}
                     <ul className="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto pr-2">
                         {result.matched_affixes?.map((log, idx) => (
                             <MasterworkingItem key={idx} text={log} />
