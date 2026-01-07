@@ -46,7 +46,102 @@ const MasterworkingItem = ({ text }) => {
         </li>
     );
 };
+// --- 使用教學元件 (折疊式) ---
+const HowToUse = () => {
+    const [isOpen, setIsOpen] = useState(false);
 
+    return (
+        <div className="w-full max-w-5xl mt-8 mb-4">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg p-3 flex justify-between items-center transition-colors group"
+            >
+                <span className="font-bold text-slate-200 flex items-center gap-2">
+                    📖 使用教學 / 評分標準
+                </span>
+                <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} text-slate-400`}>
+                    ▼
+                </span>
+            </button>
+
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="bg-slate-900/50 border border-slate-700 border-t-0 rounded-b-lg p-6 space-y-6 text-sm text-slate-300">
+                    
+                    {/* 步驟區塊 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <h3 className="font-bold text-blue-400 text-lg border-b border-blue-900/50 pb-1">STEP 1. 設定你的完美目標</h3>
+                            <ul className="list-disc list-inside space-y-1 text-slate-400">
+                                <li>在 <span className="text-blue-300">左側面板</span> 選擇你的職業。</li>
+                                <li>設定你該流派 <span className="text-yellow-200">最想要的詞綴</span> 與範圍。</li>
+                                <li>記得勾選 <span className="text-orange-400 font-bold">GA</span> (太古傳奇) 如果那是你的目標。</li>
+                                <li>填寫回火目標與特效數值。</li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="font-bold text-yellow-400 text-lg border-b border-yellow-900/50 pb-1">STEP 2. 輸入掉落裝備</h3>
+                            <ul className="list-disc list-inside space-y-1 text-slate-400">
+                                <li>在 <span className="text-yellow-300">右側面板</span> 輸入你打到的裝備數值。</li>
+                                <li>可以使用 <span className="bg-slate-700 px-1 rounded text-xs text-white">MAX</span> 按鈕快速填入頂值。</li>
+                                <li>點擊 <span className="bg-slate-700 px-1 rounded text-xs text-white">下一件 ↺</span> 可保留左側目標，只清空右側輸入。</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* 精鑄教學 (重點) */}
+                    <div className="bg-slate-800/50 p-4 rounded border border-slate-600">
+                        <h3 className="font-bold text-purple-400 text-lg mb-2 flex items-center gap-2">
+                            ✨ 獨家功能：S11 精鑄模擬 (Masterworking)
+                        </h3>
+                        <p className="mb-2">
+                            當你按下 <span className="text-red-400 font-bold">計算評分</span> 後，結果列表中的詞綴是可以互動的！
+                        </p>
+                        <div className="flex flex-col md:flex-row gap-4 mt-3">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-slate-700 px-2 py-1 rounded text-xs">點擊 1 下</span>
+                                <span>➝</span>
+                                <span className="text-blue-400 font-bold flex items-center gap-1">數值提升 +25% <span className="text-xs border border-white/20 rounded px-1">💎 Q25</span></span>
+                                <span className="text-xs text-gray-500">(品質滿級)</span>
+                            </div>
+                            <div className="hidden md:block text-slate-600">|</div>
+                            <div className="flex items-center gap-2">
+                                <span className="bg-slate-700 px-2 py-1 rounded text-xs">點擊 2 下</span>
+                                <span>➝</span>
+                                <span className="text-orange-500 font-bold flex items-center gap-1">數值提升 +75% <span className="text-xs border border-white/20 rounded px-1">🔥 Capstone</span></span>
+                                <span className="text-xs text-gray-500">(晉階大獎)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 評分標準 */}
+                    <div>
+                        <h3 className="font-bold text-gray-400 text-md mb-2">🏆 評分等級說明</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs font-bold">
+                            <div className="p-2 rounded bg-gray-800 text-gray-500 border border-gray-700">
+                                <div className="text-lg">🗑️ 60分以下</div>
+                                <div>垃圾 (Trash)</div>
+                            </div>
+                            <div className="p-2 rounded bg-blue-900/30 text-blue-400 border border-blue-900">
+                                <div className="text-lg">✨ 60~79分</div>
+                                <div>準畢業 (Good)</div>
+                            </div>
+                            <div className="p-2 rounded bg-yellow-900/30 text-yellow-400 border border-yellow-900">
+                                <div className="text-lg">🔥 80~99分</div>
+                                <div>畢業等級 (Great)</div>
+                            </div>
+                            <div className="p-2 rounded bg-orange-900/30 text-orange-500 border border-orange-900 shadow-[0_0_10px_rgba(255,165,0,0.2)]">
+                                <div className="text-lg">👑 100分</div>
+                                <div>完美畢業 (God Roll)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
+};
 // --- 資料庫 ---
 const CLASS_DB = {
     "Necromancer": { label: "死靈法師", icon: "💀", base: ["智力", "精魂消耗減免 (%)", "精魂上限", "召喚物傷害 (%)", "召喚精通等級", "地獄指揮官等級", "骷髏法師精通等級", "核心技能等級", "詛咒技能等級", "屍體技能等級", "持續暗影傷害 (%)", "被動: 增幅傷害等級", "被動: 死潮等級"], temper: ["【武器】骨矛兩次發射 (%)", "【武器】召喚傷害 (%)", "【武器】褻瀆範圍 (%)", "【攻擊】暴擊傷害 (%)", "【攻擊】終局被動等級", "【攻擊】屍爆範圍 (%)", "【防禦】總護甲 (%)", "【防禦】最大生命 (%)", "【輔助】移動速度 (%)", "【輔助】控場持續時間 (%)", "【資源】精魂生成 (%)"] },
@@ -236,7 +331,7 @@ function App() {
                 
                 </div>
             </div>
-            
+            <HowToUse />
             <div className="mt-8 w-full max-w-5xl">
                 <h3 className="text-slate-400 text-sm font-bold mb-2 ml-1">📜 更新日誌</h3>
                 <textarea 
