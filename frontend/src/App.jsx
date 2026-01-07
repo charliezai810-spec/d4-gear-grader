@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
+
 // --- 更新日誌內容 (在這裡修改文字) ---
 const UPDATE_LOG = `
-2026/1/6 新增更新日誌功能，未來每次更新都會記錄在這裡！
-2026/1/7 新增精鑄模擬系統`;
+2026/1/7 
+- 🔥 新增 S11 精鑄模擬系統 (Masterworking)
+  (點擊評分結果的詞綴，可切換 Q25 / Capstone 數值)
+- 📝 新增更新日誌功能
+`;
+
 // --- S11 精鑄模擬元件 (Quality 25 機制) ---
 const MasterworkingItem = ({ text }) => {
     // 狀態: 0=無, 1=品質滿級(Q25), 2=晉階加成(Capstone)
@@ -15,7 +20,8 @@ const MasterworkingItem = ({ text }) => {
 
     const baseVal = extractNumber(text);
     
-    if (baseVal === null) return <li className="text-slate-300">{text}</li>;
+    // 如果沒有數字就不啟用點擊
+    if (baseVal === null) return <li className="text-slate-300 py-1 px-2">{text}</li>;
 
     const calculateS11 = (base, currentState) => {
         let multiplier = 1.0;
@@ -83,6 +89,7 @@ const MasterworkingItem = ({ text }) => {
         </li>
     );
 };
+
 // --- 資料庫 (僅用於顯示選單) ---
 const COMMON_BASE = [];
 const CLASS_DB = {
@@ -379,8 +386,8 @@ const CLASS_DB = {
 
             // --- 防禦與生存 (Defensive) ---
             "受到的治療(%)",
-            "擊中生命恢復",
-            "擊殺生命恢復",
+            "擊中生命回復",
+            "擊殺生命回復",
             "每5秒回復生命",
             "擊殺恢復信念",
             "強韌產生量(%)",
@@ -567,11 +574,7 @@ function App() {
     useEffect(() => {
         if (!selectedClass) return;
         const cls = CLASS_DB[selectedClass];
-        
-        // 1. 拿掉 sort
-        // 2. 拿掉 COMMON_BASE (因為上面已經清空了，這裡不併也沒差，但為了乾淨可以拿掉)
         setBaseList([...cls.base]); 
-        
         setTemperList([...cls.temper]);
         localStorage.setItem("d4_selected_class", selectedClass);
     }, [selectedClass]);
@@ -584,13 +587,10 @@ function App() {
         return () => clearTimeout(t);
     }, [target]);
 
-    // 🔥 呼叫後端 API (大腦) 🔥
-// 🔥 呼叫後端 API (大腦) - 已修正 422 錯誤 🔥
     useEffect(() => {
         const fetchScore = async () => {
             try {
                 const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
-                // 定義一個小工具：把 "空字串" 轉成 null，把 "文字數字" 轉成真的數字
                 const clean = (item) => ({
                     ...item,
                     min: item.min === "" ? null : Number(item.min),
@@ -598,7 +598,6 @@ function App() {
                     value: item.value === "" ? null : Number(item.value),
                 });
 
-                // 準備 payload，先把所有資料清洗過一次
                 const payload = {
                     target_base: target.baseAffixes.map(clean),
                     target_temper: target.temperAffixes.map(clean),
@@ -609,7 +608,6 @@ function App() {
                     drop_item_power: Number(drop.itemPower)
                 };
 
-                // 這是反引號 (鍵盤左上角，Esc 下面、數字 1 左邊那個鍵)
                 const res = await fetch(`${API_BASE}/calculate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -619,7 +617,6 @@ function App() {
                 if (res.ok) {
                     setResult(await res.json());
                 } else {
-                    // 如果還是報錯，把錯誤印出來方便除錯
                     console.error("Server Error:", res.status);
                     setResult(prev => ({ ...prev, tierLabel: `格式錯誤 (${res.status})` }));
                 }
@@ -664,8 +661,23 @@ function App() {
             </div>
             <div className="mt-8 w-full max-w-5xl bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
                 <div className="w-full h-8 bg-slate-900 rounded-full overflow-hidden border border-slate-600 relative mb-4"><div className={`h-full transition-all duration-700 flex items-center justify-end pr-3 ${result.barColor}`} style={{ width: `${result.score}%` }}><span className="text-sm font-bold text-white drop-shadow-md">{result.score}%</span></div></div>
-                <div className="flex flex-col md:flex-row gap-6"><div className="w-full md:w-1/3"><h3 className={`text-3xl font-extrabold ${result.tierColor} mb-2`}>{result.tierLabel}</h3>{result.isBrick && <div className="text-red-300 font-bold bg-red-950/50 p-2 rounded text-center animate-pulse">⚠️ 已變磚</div>}</div><div className="w-full md:w-2/3 bg-slate-900/50 p-4 rounded border border-slate-700/50"><ul className="space-y-1 text-sm text-slate-300 max-h-40 overflow-y-auto">{result.analysis.map((log, idx) => <li key={idx}>{log}</li>)}</ul></div></div>
-                {/* ... 上面是原本的評分結果顯示區 ... */}
+                <div className="flex flex-col md:flex-row gap-6"><div className="w-full md:w-1/3"><h3 className={`text-3xl font-extrabold ${result.tierColor} mb-2`}>{result.tierLabel}</h3>{result.isBrick && <div className="text-red-300 font-bold bg-red-950/50 p-2 rounded text-center animate-pulse">⚠️ 已變磚</div>}</div>
+                
+                <div className="w-full md:w-2/3 bg-slate-900/50 p-4 rounded border border-slate-700/50">
+                    {/* 🔥 這裡改動了！加入提示文字 */}
+                    <div className="text-xs text-slate-500 mb-2 text-center">
+                        💡 小撇步：點擊下方的詞綴，可以模擬 S11 精鑄 (Q25/晉階) 喔！
+                    </div>
+                    {/* 🔥 這裡改動了！把原本的 li 換成 MasterworkingItem */}
+                    <ul className="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto pr-2">
+                        {result.analysis.map((log, idx) => (
+                            <MasterworkingItem key={idx} text={log} />
+                        ))}
+                    </ul>
+                </div>
+                
+                </div>
+            </div>
             
             <div className="mt-8 w-full max-w-5xl">
                 <h3 className="text-slate-400 text-sm font-bold mb-2 ml-1">📜 更新日誌</h3>
@@ -675,7 +687,6 @@ function App() {
                     className="w-full h-48 bg-slate-900/80 border border-slate-700 rounded-lg p-4 text-slate-400 text-sm font-mono focus:outline-none resize-none diablo-border shadow-inner"
                     style={{ whiteSpace: 'pre-wrap' }}
                 />
-            </div>
             </div>
         </div>
     );
