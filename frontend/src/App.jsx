@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 // --- 更新日誌內容 (在這裡修改文字) ---
 const UPDATE_LOG = `
 2026/1/6 新增更新日誌功能，未來每次更新都會記錄在這裡！
-`;
+2026/1/7 新增精鑄模擬系統`;
 // --- S11 精鑄模擬元件 (Quality 25 機制) ---
 const MasterworkingItem = ({ text }) => {
     // 狀態: 0=無, 1=品質滿級(Q25), 2=晉階加成(Capstone)
