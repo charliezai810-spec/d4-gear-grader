@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles 
+
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -190,4 +190,3 @@ async def calculate_score(data: GearInput):
         "analysis": log,
         "isBrick": is_brick
     }
-app.mount("/", StaticFiles(directory="../frontend/dist", html=True), name="static")
