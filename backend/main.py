@@ -1,21 +1,14 @@
 from fastapi import FastAPI
-
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
 app = FastAPI()
+
+# --- CORS 設定 (只留一組就好) ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # "*" 代表允許所有網址連線 (方便起見先全開)
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# 允許前端呼叫 (解決跨域問題)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # 允許所有網址連線
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -182,11 +175,12 @@ async def calculate_score(data: GearInput):
         color="text-gray-400"
         bar="bg-gray-600"
 
+    # 🔥 關鍵修正：這裡的 key 改成 matched_affixes，這樣前端就看得到了！ 🔥
     return {
         "score": final_score,
         "tierLabel": label,
         "tierColor": color,
         "barColor": bar,
-        "analysis": log,
+        "matched_affixes": log, 
         "isBrick": is_brick
     }
