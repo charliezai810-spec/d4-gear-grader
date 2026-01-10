@@ -1,9 +1,14 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-
+import google.generativeai as genai
+import json
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyAT2kScGYywTeAm3SfJfET0g91TZ3nhBg4")
+genai.configure(api_key=GOOGLE_API_KEY)
 app = FastAPI()
+
 
 # --- CORS 設定 (只留一組就好) ---
 app.add_middleware(
@@ -184,3 +189,53 @@ async def calculate_score(data: GearInput):
         "matched_affixes": log, 
         "isBrick": is_brick
     }
+@app.post("/ocr")
+async def analyze_image(file: UploadFile = File(...)):
+    try:
+        # 1. 讀取圖片
+        content = await file.read()
+        
+        # 2. 設定 Prompt (咒語)
+        # 教 Gemini 看懂暗黑4的裝備截圖，並轉成我們需要的 JSON 格式
+        prompt = """
+        Analyze this Diablo 4 item screenshot. Extract the stats into a JSON format strictly matching this structure:
+        {
+            "item_power": int,
+            "base_affixes": [
+                {"name": "Affix Name (Traditional Chinese)", "value": number, "isGA": boolean},
+                ... (max 3 items)
+            ],
+            "temper_affixes": [
+                {"name": "Temper Name (Traditional Chinese)", "value": number},
+                ... (max 2 items)
+            ],
+            "aspect": {
+                "name": "Aspect Name (Traditional Chinese, only the effect name)",
+                "value": number (extract the dynamic value in blue/orange, if range exists take the current value)
+            }
+        }
+        RULES:
+        1. Translate all names to Traditional Chinese (繁體中文) matching Diablo 4 Taiwan terminology.
+        2. "isGA" is true if there is a star icon next to the stat.
+        3. Only extract numbers, ignore symbols like +, %, brackets.
+        4. If it's a Greater Affix (GA), the value is the boosted value.
+        5. Return ONLY raw JSON, no markdown formatting.
+        """
+
+        # 3. 呼叫 Gemini Flash (速度快又省錢)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content([
+            {"mime_type": "image/jpeg", "data": content},
+            prompt
+        ])
+
+        # 4. 清理回傳的字串 (有時候會包含 ```json ... ```)
+        text_response = response.text.strip()
+        if text_response.startswith("```json"):
+            text_response = text_response[7:-3]
+        
+        return json.loads(text_response)
+
+    except Exception as e:
+        print(f"OCR Error: {e}")
+        raise HTTPException(status_code=500, detail="圖片辨識失敗，請重試")

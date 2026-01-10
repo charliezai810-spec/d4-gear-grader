@@ -1,3 +1,5 @@
 fastapi
 uvicorn
-aiofiles
+python-multipart
+google-generativeai
+pydantic
