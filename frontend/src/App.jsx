@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 
 // --- 更新日誌內容 ---
 const UPDATE_LOG = `
-2026/1/7 
+2026/1/10 
+- ✨ 優化：特效 (威能) 現在支援搜尋選單了！
+- 📸 新增 AI 圖片辨識 (OCR)
+2026/1/7
 - 📖 新增使用教學指南
 - 🔥 S11 精鑄模擬系統正常運作中
-2026/1/10
-- 📸 新增 AI 圖片辨識 (OCR): 截圖後按 Ctrl+V 自動填入數值
 `;
 
 // --- 使用教學元件 (折疊式) ---
@@ -93,33 +94,7 @@ const MasterworkingItem = ({ text }) => {
     );
 };
 
-// --- 資料庫 ---
-const CLASS_DB = {
-    "Necromancer": { label: "死靈法師", icon: "💀", base: [], temper: [] },
-    "Barbarian": { label: "野蠻人", icon: "🪓", base: [], temper: [] },
-    "Sorcerer": { 
-        label: "秘術師", icon: "🔮", 
-        base: [],
-        temper: []
-    },
-    "Paladin": { 
-        label: "聖騎士", icon: "🛡️", 
-        base: [],
-        temper: []
-    },
-    "Rogue": { 
-        label: "俠盜", icon: "🗡️", 
-        base: [], 
-        temper: [] },
-    "Druid": {
-       label: "德魯伊", icon: "🐻",
-        base: [], 
-        temper: [] }
-};
-
-const DEFAULT_TARGET = { itemPowerCap: 800, baseAffixes: [{name:"",isGA:false,min:"",max:""},{name:"",isGA:false,min:"",max:""},{name:"",isGA:false,min:"",max:""}], temperAffixes: [{name:"",min:"",max:""},{name:"",min:"",max:""}], aspect: { name: "", min: "", max: "" } };
-
-// --- 元件: 智慧搜尋 ---
+// --- 元件: 智慧搜尋 (已升級：支援手動輸入) ---
 const SearchableSelect = ({ options, value, onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState(value);
@@ -130,13 +105,27 @@ const SearchableSelect = ({ options, value, onChange, placeholder }) => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-    const filteredOptions = options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // 防呆：確保 options 是一個陣列
+    const safeOptions = Array.isArray(options) ? options : [];
+    const filteredOptions = safeOptions.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const handleSelect = (opt) => { setSearchTerm(opt); onChange(opt); setIsOpen(false); };
+    
     return (
         <div className="relative w-full" ref={wrapperRef}>
-            <input type="text" className="w-full bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 focus:border-blue-500 outline-none p-2 placeholder-slate-500"
-                placeholder={placeholder} value={searchTerm} onClick={() => setIsOpen(true)}
-                onChange={(e) => { setSearchTerm(e.target.value); setIsOpen(true); if(e.target.value === "") onChange(""); }} />
+            <input 
+                type="text" 
+                className="w-full bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 focus:border-blue-500 outline-none p-2 placeholder-slate-500"
+                placeholder={placeholder} 
+                value={searchTerm} 
+                onClick={() => setIsOpen(true)}
+                onChange={(e) => { 
+                    setSearchTerm(e.target.value); 
+                    onChange(e.target.value); // 🔥 關鍵修改：允許手動輸入
+                    setIsOpen(true); 
+                }} 
+            />
             {isOpen && filteredOptions.length > 0 && (
                 <div className="absolute top-100 left-0 right-0 max-h-48 overflow-y-auto bg-slate-800 border border-slate-600 rounded z-50 shadow-xl">
                     {filteredOptions.map((opt, idx) => (<div key={idx} className="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" onClick={() => handleSelect(opt)}>{opt}</div>))}
@@ -146,28 +135,62 @@ const SearchableSelect = ({ options, value, onChange, placeholder }) => {
     );
 };
 
+// --- 預設資料 (避免第一次載入時空白) ---
+const DEFAULT_CLASS_DB = {
+    "Necromancer": { label: "死靈法師", icon: "💀", base: [], temper: [], aspects: [] },
+    "Barbarian": { label: "野蠻人", icon: "🪓", base: [], temper: [], aspects: [] },
+    "Sorcerer": { label: "秘術師", icon: "🔮", base: [], temper: [], aspects: [] },
+    "Paladin": { label: "聖騎士", icon: "🛡️", base: [], temper: [], aspects: [] },
+    "Rogue": { label: "俠盜", icon: "🗡️", base: [], temper: [], aspects: [] },
+    "Druid": { label: "德魯伊", icon: "🐻", base: [], temper: [], aspects: [] }
+};
+
+const DEFAULT_TARGET = { itemPowerCap: 800, baseAffixes: [{name:"",isGA:false,min:"",max:""},{name:"",isGA:false,min:"",max:""},{name:"",isGA:false,min:"",max:""}], temperAffixes: [{name:"",min:"",max:""},{name:"",min:"",max:""}], aspect: { name: "", min: "", max: "" } };
+
+
 function App() {
     const [selectedClass, setSelectedClass] = useState(() => localStorage.getItem("d4_selected_class") || "Necromancer");
+    const [classDB, setClassDB] = useState(DEFAULT_CLASS_DB);
+    const [dbLoading, setDbLoading] = useState(true);
+
     const [baseList, setBaseList] = useState([]);
     const [temperList, setTemperList] = useState([]);
+    
     const [target, setTarget] = useState(() => { const saved = localStorage.getItem("d4_target_v8"); return saved ? JSON.parse(saved) : DEFAULT_TARGET; });
     const [drop, setDrop] = useState({ itemPower: 800, baseAffixes: [{name:"",isGA:false,value:""},{name:"",isGA:false,value:""},{name:"",isGA:false,value:""}], temperAffixes: [{name:"",value:""},{name:"",value:""}], aspect: { name: "", value: "" } });
     const [result, setResult] = useState({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
     const [showSaveToast, setShowSaveToast] = useState(false);
     const [loading, setLoading] = useState(false);
-    
-    // 🔥 OCR Loading 狀態
     const [ocrLoading, setOcrLoading] = useState(false);
 
     const firstRender = useRef(true);
 
+    // 1. 抓取資料庫
     useEffect(() => {
-        if (!selectedClass) return;
-        const cls = CLASS_DB[selectedClass];
-        setBaseList([...cls.base]); 
-        setTemperList([...cls.temper]);
+        const fetchDB = async () => {
+            try {
+                const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
+                const res = await fetch(`${API_BASE}/affixes`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setClassDB(prev => ({ ...prev, ...data })); // 合併預設與抓到的資料
+                }
+            } catch (err) {
+                console.error("無法載入資料庫", err);
+            }
+            setDbLoading(false);
+        };
+        fetchDB();
+    }, []);
+
+    // 2. 更新當前職業列表
+    useEffect(() => {
+        if (!selectedClass || !classDB[selectedClass]) return;
+        const cls = classDB[selectedClass];
+        setBaseList(cls.base || []); 
+        setTemperList(cls.temper || []);
         localStorage.setItem("d4_selected_class", selectedClass);
-    }, [selectedClass]);
+    }, [selectedClass, classDB]);
 
     useEffect(() => {
         if (firstRender.current) { firstRender.current = false; return; }
@@ -177,7 +200,7 @@ function App() {
         return () => clearTimeout(t);
     }, [target]);
 
-    // 🔥 全域貼上監聽器 (OCR 核心)
+    // 🔥 全域貼上監聽器 (OCR)
     useEffect(() => {
         const handlePaste = async (e) => {
             const items = e.clipboardData.items;
@@ -299,10 +322,8 @@ function App() {
         setResult({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
     };
 
-    // 🔥 這是修復過後的 return 結構 🔥
     return (
         <div className="min-h-screen p-4 md:p-8 flex flex-col items-center max-w-7xl mx-auto relative pb-20">
-            {/* 🔥 OCR Loading 遮罩 */}
             {ocrLoading && (
                 <div className="fixed inset-0 bg-black/80 z-[999] flex flex-col items-center justify-center backdrop-blur-sm">
                     <div className="animate-spin text-5xl mb-4">📸</div>
@@ -318,7 +339,13 @@ function App() {
             </header>
             
             <div className="w-full mb-6 flex flex-wrap justify-center gap-3">
-                {Object.keys(CLASS_DB).map(clsKey => (<button key={clsKey} onClick={() => setSelectedClass(clsKey)} className={`px-5 py-2 rounded-lg flex items-center gap-2 font-bold class-btn ${selectedClass === clsKey ? 'active' : 'inactive'}`}><span>{CLASS_DB[clsKey].icon}</span> {CLASS_DB[clsKey].label}</button>))}
+                {dbLoading ? <span className="text-slate-500 animate-pulse">正在載入資料庫...</span> : 
+                 Object.keys(classDB).map(clsKey => (
+                    <button key={clsKey} onClick={() => setSelectedClass(clsKey)} className={`px-5 py-2 rounded-lg flex items-center gap-2 font-bold class-btn ${selectedClass === clsKey ? 'active' : 'inactive'}`}>
+                        <span>{classDB[clsKey]?.icon}</span> {classDB[clsKey]?.label}
+                    </button>
+                 ))
+                }
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
@@ -326,7 +353,22 @@ function App() {
                     <h2 className="text-xl font-bold text-blue-400 mb-4 section-header">1. 設定目標</h2>
                     <div className="mb-6 space-y-2"><h3 className="text-sm text-slate-400 font-bold">天生詞綴</h3>{[0,1,2].map(i => (<div key={i} className="grid grid-cols-12 gap-2 items-center"><div className="col-span-5 relative"><SearchableSelect options={baseList} placeholder="搜尋詞綴..." value={target.baseAffixes[i].name} onChange={v=>handleTargetChange('baseAffixes',i,'name',v)} /></div><div className="col-span-1 flex justify-center"><input type="checkbox" className="accent-orange-500 w-4 h-4" checked={target.baseAffixes[i].isGA} onChange={e=>handleTargetChange('baseAffixes',i,'isGA',e.target.checked)}/></div><div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Min" value={target.baseAffixes[i].min} onChange={e=>handleTargetChange('baseAffixes',i,'min',e.target.value)}/></div><div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Max" value={target.baseAffixes[i].max} onChange={e=>handleTargetChange('baseAffixes',i,'max',e.target.value)}/></div></div>))}</div>
                     <div className="mb-6 space-y-2"><h3 className="text-sm text-slate-400 font-bold text-yellow-500">⚒️ 回火目標</h3>{[0,1].map(i => (<div key={i} className="grid grid-cols-12 gap-2 items-center"><div className="col-span-6 relative"><SearchableSelect options={temperList} placeholder="搜尋回火..." value={target.temperAffixes[i].name} onChange={v=>handleTargetChange('temperAffixes',i,'name',v)} /></div><div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Min" value={target.temperAffixes[i].min} onChange={e=>handleTargetChange('temperAffixes',i,'min',e.target.value)}/></div><div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Max" value={target.temperAffixes[i].max} onChange={e=>handleTargetChange('temperAffixes',i,'max',e.target.value)}/></div></div>))}</div>
-                    <div className="space-y-2 border-t border-slate-700 pt-4"><h3 className="text-sm text-orange-400 font-bold">🔥 特效</h3><div className="grid grid-cols-12 gap-2 items-center"><div className="col-span-6"><input type="text" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-orange-200 placeholder-slate-500" placeholder="特效名稱" value={target.aspect.name} onChange={e=>handleTargetChange('aspect',null,'name',e.target.value)}/></div><div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Min" value={target.aspect.min} onChange={e=>handleTargetChange('aspect',null,'min',e.target.value)}/></div><div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Max" value={target.aspect.max} onChange={e=>handleTargetChange('aspect',null,'max',e.target.value)}/></div></div></div>
+                    <div className="space-y-2 border-t border-slate-700 pt-4">
+                        <h3 className="text-sm text-orange-400 font-bold">🔥 特效</h3>
+                        <div className="grid grid-cols-12 gap-2 items-center">
+                            {/* 🔥 這裡換成了 SearchableSelect 🔥 */}
+                            <div className="col-span-6 relative">
+                                <SearchableSelect 
+                                    options={classDB[selectedClass]?.aspects || []} 
+                                    placeholder="搜尋威能..." 
+                                    value={target.aspect.name} 
+                                    onChange={v=>handleTargetChange('aspect',null,'name',v)} 
+                                />
+                            </div>
+                            <div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Min" value={target.aspect.min} onChange={e=>handleTargetChange('aspect',null,'min',e.target.value)}/></div>
+                            <div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Max" value={target.aspect.max} onChange={e=>handleTargetChange('aspect',null,'max',e.target.value)}/></div>
+                        </div>
+                    </div>
                 </div>
                 <div className="bg-slate-900 p-6 rounded-xl diablo-border border-l-4 border-yellow-600 relative">
                     <div className="flex justify-between items-center mb-4 section-header"><h2 className="text-xl font-bold text-yellow-400">2. 輸入掉落</h2><div className="flex gap-2"><button onClick={()=>setDrop({...drop,itemPower:drop.itemPower===800?750:800})} className={`px-3 py-1 rounded text-sm font-bold ${drop.itemPower===800?'bg-orange-600 text-white':'bg-blue-600 text-white'}`}>{drop.itemPower}</button><button onClick={resetDrop} className="px-3 py-1 rounded text-sm bg-slate-700 text-white hover:bg-slate-600 border border-slate-500">下一件 ↺</button></div></div>
@@ -334,7 +376,6 @@ function App() {
                     <div className="mb-6 space-y-2"><h3 className="text-sm text-slate-400 font-bold text-yellow-500">⚒️ 鑑定回火</h3>{[0,1].map(i => (<div key={i} className="grid grid-cols-12 gap-2 items-center"><div className="col-span-6 relative"><SearchableSelect options={temperList} placeholder="(未回火)" value={drop.temperAffixes[i].name} onChange={v=>handleDropChange('temperAffixes',i,'name',v)} /></div><div className="col-span-6 flex gap-1"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-yellow-400 font-bold" placeholder="Val" value={drop.temperAffixes[i].value} onChange={e=>handleDropChange('temperAffixes',i,'value',e.target.value)}/><button onClick={()=>fillMax('temperAffixes', i)} className="bg-slate-700 hover:bg-slate-600 text-xs text-white px-2 rounded">MAX</button></div></div>))}</div>
                     <div className="space-y-2 border-t border-slate-700 pt-4"><h3 className="text-sm text-orange-400 font-bold">🔥 鑑定特效</h3><div className="grid grid-cols-12 gap-2 items-center"><div className="col-span-6"><span className="text-sm text-gray-500 italic block p-2">對應左側特效數值</span></div><div className="col-span-6 flex gap-1"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-orange-400 font-bold" placeholder="Val" value={drop.aspect.value} onChange={e=>handleDropChange('aspect',null,'value',e.target.value)}/><button onClick={fillMaxAspect} className="bg-slate-700 hover:bg-slate-600 text-xs text-white px-2 rounded">MAX</button></div></div></div>
                 
-                    {/* 按鈕區域 */}
                     <div className="mt-6">
                         <button 
                             onClick={calculateScore} 

@@ -32,9 +32,10 @@ def update_database():
     model = genai.GenerativeModel('gemini-1.5-flash')
     
     # 強大的 Prompt (咒語)
+ # 修改 prompt，讓 AI 多抓一個 "aspects" (威能)
     prompt = f"""
     You are a Diablo 4 Database Assistant.
-    I will provide raw text containing Diablo 4 Affixes (Attributes) and Tempering Manuals.
+    I will provide raw text containing Diablo 4 Affixes (Attributes), Tempering Manuals, and Legendary Aspects.
     
     Your task is to extract this data and output a strictly valid JSON.
     
@@ -44,19 +45,20 @@ def update_database():
         "label": "死靈法師",
         "icon": "💀",
         "base": ["智力", "最大生命", ...],
-        "temper": ["【武器】骨矛雙倍傷害", "【攻擊】召喚傷害", ...]
+        "temper": ["【武器】骨矛雙倍傷害", ...],
+        "aspects": ["加速威能", "血脈掌握之威能", "月亮升起之威能", ...]  <-- 新增這個！
       }},
       ... (Detect other classes if present in text)
     }}
 
     RULES:
-    1. Translate everything to Traditional Chinese (繁體中文) used in Taiwan server.
-    2. "base" contains native item affixes (e.g., Intelligence, Cooldown Reduction).
-    3. "temper" contains tempering manual options (e.g., Chance for Bone Spear to cast twice).
-    4. Categorize Tempering affixes with prefixes like 【武器】, 【攻擊】, 【防禦】, 【輔助】, 【資源】.
-    5. If the text only contains data for one class (e.g. Sorcerer), only return that class in the JSON.
-    6. Return ONLY the JSON string. No markdown formatting.
-
+    1. Translate everything to Traditional Chinese (繁體中文).
+    2. "base": Native item affixes.
+    3. "temper": Tempering manual options.
+    4. "aspects": Legendary Aspect names (only the name, no values).
+    5. If text implies generic aspects (like Disobedience/Juggernaut), add them to all classes or the specific class mentioned.
+    6. Return ONLY the JSON string.
+    
     RAW TEXT TO PROCESS:
     {raw_text}
     """
