@@ -8,7 +8,29 @@ import json
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyAT2kScGYywTeAm3SfJfET0g91TZ3nhBg4")
 genai.configure(api_key=GOOGLE_API_KEY)
 app = FastAPI()
+def load_db():
+    try:
+        # 找到 data/affixes.json 的正確路徑
+        file_path = os.path.join(os.path.dirname(__file__), "data", "affixes.json")
+        
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                print("✅ 成功載入 affixes.json")
+                return data
+        else:
+            print("⚠️ 找不到 affixes.json，請確認檔案位置")
+            return {}
+    except Exception as e:
+        print(f"❌ 讀取資料庫失敗: {e}")
+        return {}
 
+# 👇 【新增這段】讓前端 (React) 可以抓到資料的 API
+@app.get("/affixes")
+def get_affixes():
+    # 這裡我們設定「每次前端呼叫都重新讀一次檔案」
+    # 這樣你在 Render 上改了 JSON，只要刷新網頁就會生效，不用重啟伺服器！
+    return load_db()
 
 # --- CORS 設定 (只留一組就好) ---
 app.add_middleware(
