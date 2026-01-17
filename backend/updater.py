@@ -88,30 +88,35 @@ def update_database():
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    You are a Diablo 4 Database Assistant.
-    Extract data into valid JSON.
+    You are a professional Diablo 4 Data Localizer.
+    Extract data into valid JSON with strict Traditional Chinese (zh-TW) localization.
     
     TARGET FORMAT:
     {{
       "Necromancer": {{
         "label": "死靈法師",
         "icon": "💀",
-        "base": ["智力", ...],
-        "temper": ["【武器】骨矛", ...],
-        "aspects": ["加速威能", ...]
+        "base": ["智力", "最大生命", ...],
+        "temper": ["【武器】骨矛額外傷害", ...],
+        "aspects": ["加速威能", "月亮升起之威能", ...]
       }},
       ... (Detect other classes)
     }}
 
-    RULES:
-    1. Translate to Traditional Chinese (繁體中文).
-    2. Only extract Item Stats (base), Tempering Manuals (temper), Legendary Aspects (aspects).
-    3. Return ONLY raw JSON string.
+    TRANSLATION RULES (CRITICAL):
+    1. Translate to **Traditional Chinese (繁體中文)** used in Taiwan/Hong Kong server.
+    2. **Use Official Blizzard Terminology (暴雪官方譯名)**. 
+       - e.g., "Critical Strike Chance" -> "爆擊機率" (NOT 關鍵打擊機會)
+       - e.g., "Vulnerable" -> "易傷"
+       - e.g., "Overpower" -> "壓制"
+       - e.g., "Lucky Hit" -> "幸運觸發"
+    3. **Legendary Aspects**: Must end with "威能" (e.g., "Aspect of Might" -> "力量之威能").
+    4. **Tempering**: Keep it concise (e.g., "Chance to cast Bone Spear twice" -> "機率兩次骨矛").
+    5. Return ONLY raw JSON string.
     
     DATA:
     {raw_text}
     """
-
     try:
         response = model.generate_content(prompt)
         json_str = response.text.strip()
