@@ -142,7 +142,8 @@ const DEFAULT_CLASS_DB = {
     "Sorcerer": { label: "秘術師", icon: "🔮", base: [], temper: [], aspects: [] },
     "Paladin": { label: "聖騎士", icon: "🛡️", base: [], temper: [], aspects: [] },
     "Rogue": { label: "俠盜", icon: "🗡️", base: [], temper: [], aspects: [] },
-    "Druid": { label: "德魯伊", icon: "🐻", base: [], temper: [], aspects: [] }
+    "Druid": { label: "德魯伊", icon: "🐻", base: [], temper: [], aspects: [] },
+    "Spiritborn": { label: "魂靈師", icon: "👻", base: [], temper: [], aspects: [] }
 };
 
 const DEFAULT_TARGET = { itemPowerCap: 800, baseAffixes: [{name:"",isGA:false,min:"",max:""},{name:"",isGA:false,min:"",max:""},{name:"",isGA:false,min:"",max:""}], temperAffixes: [{name:"",min:"",max:""},{name:"",min:"",max:""}], aspect: { name: "", min: "", max: "" } };
