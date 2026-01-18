@@ -52,7 +52,7 @@ const HowToUse = () => {
     );
 };
 
-// --- S11 精鑄模擬元件 ---
+// ---  精鑄模擬元件 ---
 const MasterworkingItem = ({ text }) => {
     const [state, setState] = useState(0); 
     const extractNumber = (str) => {
@@ -62,14 +62,14 @@ const MasterworkingItem = ({ text }) => {
     const baseVal = extractNumber(text);
     if (baseVal === null) return <li className="text-slate-300 py-1 px-2">{text}</li>;
 
-    const calculateS11 = (base, currentState) => {
+    const calculate = (base, currentState) => {
         let multiplier = 1.0;
         if (currentState === 1) multiplier = 1.25; 
         else if (currentState === 2) multiplier = 1.75; 
         return Math.floor(base * multiplier);
     };
 
-    const newVal = calculateS11(baseVal, state);
+    const newVal = calculate(baseVal, state);
     const newText = text.replace(baseVal.toString(), newVal.toString());
 
     const styles = [
@@ -87,7 +87,7 @@ const MasterworkingItem = ({ text }) => {
         >
             <span className={currentStyle.color}>{newText}</span>
             {state > 0 && <span className="text-xs ml-2 font-mono border border-white/10 px-1 rounded bg-black/20">{currentStyle.icon} {currentStyle.label}</span>}
-            {state === 0 && <span className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">S11 模擬 ⚒️</span>}
+            {state === 0 && <span className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"> 模擬 ⚒️</span>}
         </li>
     );
 };
@@ -413,7 +413,7 @@ function App() {
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-full md:w-1/3"><h3 className={`text-3xl font-extrabold ${result.tierColor} mb-2`}>{result.tierLabel}</h3>{result.isBrick && <div className="text-red-300 font-bold bg-red-950/50 p-2 rounded text-center animate-pulse">⚠️ 已變磚</div>}</div>
                             <div className="w-full md:w-2/3 bg-slate-900/50 p-4 rounded border border-slate-700/50">
-                                <div className="text-xs text-slate-500 mb-2 text-center">💡 小撇步：點擊下方的詞綴，可以模擬 S11 精鑄 (Q25/晉階) 喔！</div>
+                                <div className="text-xs text-slate-500 mb-2 text-center">💡 小撇步：點擊下方的詞綴，可以模擬  精鑄 (Q25/晉階) 喔！</div>
                                 <ul className="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto pr-2">{result.matched_affixes?.map((log, idx) => (<MasterworkingItem key={idx} text={log} />))}</ul>
                             </div>
                         </div>
