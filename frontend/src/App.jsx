@@ -1,10 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react'; // 👈 確保有 useCallback
+import { useDropzone } from 'react-dropzone';
+// 👇 引入圖示
+import { CameraIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 
 // --- 更新日誌內容 ---
 const UPDATE_LOG = `
+2026/1/18
+- 📸 新增：手機/平板直接拍照辨識按鈕
+- ✨ 優化：整合圖片上傳邏輯 (拖放/貼上/拍照)
 2026/1/10 
-- ✨ 優化：特效 (威能) 現在支援搜尋選單了！
-- 📸 新增 AI 圖片辨識 (OCR)
+- ✨ 優化：特效 (精華) 現在支援搜尋選單了！
 2026/1/7
 - 📖 新增使用教學指南
 - 🔥 S11 精鑄模擬系統正常運作中
@@ -36,18 +41,11 @@ const HowToUse = () => {
                             <h3 className="font-bold text-yellow-400 text-lg border-b border-yellow-900/50 pb-1">STEP 2. 輸入掉落 (支援 OCR)</h3>
                             <ul className="list-disc list-inside space-y-1 text-slate-400">
                                 <li>手動輸入數值，或使用 <span className="bg-slate-700 px-1 rounded text-xs text-white">MAX</span> 按鈕。</li>
-                                <li>📸 <span className="text-green-400 font-bold">OCR 黑科技</span>：遊戲中按 <code className="bg-slate-700 px-1 rounded">Win+Shift+S</code> 截圖，然後在此網頁按 <code className="bg-slate-700 px-1 rounded">Ctrl+V</code>，AI 會自動填寫！</li>
+                                <li>📸 <span className="text-green-400 font-bold">OCR 黑科技</span>：截圖後按 <code className="bg-slate-700 px-1 rounded">Ctrl+V</code>，或點擊上方拍照按鈕！</li>
                             </ul>
                         </div>
                     </div>
-                    <div className="bg-slate-800/50 p-4 rounded border border-slate-600">
-                        <h3 className="font-bold text-purple-400 text-lg mb-2">✨ S11 精鑄模擬</h3>
-                        <div className="flex flex-col md:flex-row gap-4 mt-3">
-                            <div className="flex items-center gap-2"><span className="bg-slate-700 px-2 py-1 rounded text-xs">點擊 1 下</span><span>➝</span><span className="text-blue-400 font-bold flex items-center gap-1">數值 +25% <span className="text-xs border border-white/20 rounded px-1">💎 Q25</span></span></div>
-                            <div className="hidden md:block text-slate-600">|</div>
-                            <div className="flex items-center gap-2"><span className="bg-slate-700 px-2 py-1 rounded text-xs">點擊 2 下</span><span>➝</span><span className="text-orange-500 font-bold flex items-center gap-1">數值 +75% <span className="text-xs border border-white/20 rounded px-1">🔥 Capstone</span></span></div>
-                        </div>
-                    </div>
+                    {/* S11 模擬說明略... */}
                 </div>
             </div>
         </div>
@@ -85,7 +83,7 @@ const MasterworkingItem = ({ text }) => {
         <li 
             onClick={() => setState((prev) => (prev + 1) % 3)} 
             className={`cursor-pointer select-none transition-all duration-200 px-2 py-1 rounded hover:bg-slate-800 ${currentStyle.bg} flex items-center justify-between group border border-transparent hover:border-slate-600`}
-            title="點擊模擬 S11 精鑄"
+            title="點擊模擬精鑄"
         >
             <span className={currentStyle.color}>{newText}</span>
             {state > 0 && <span className="text-xs ml-2 font-mono border border-white/10 px-1 rounded bg-black/20">{currentStyle.icon} {currentStyle.label}</span>}
@@ -94,7 +92,7 @@ const MasterworkingItem = ({ text }) => {
     );
 };
 
-// --- 元件: 智慧搜尋 (已升級：支援手動輸入) ---
+// --- 元件: 智慧搜尋 ---
 const SearchableSelect = ({ options, value, onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState(value);
@@ -106,7 +104,6 @@ const SearchableSelect = ({ options, value, onChange, placeholder }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
     
-    // 防呆：確保 options 是一個陣列
     const safeOptions = Array.isArray(options) ? options : [];
     const filteredOptions = safeOptions.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -122,7 +119,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder }) => {
                 onClick={() => setIsOpen(true)}
                 onChange={(e) => { 
                     setSearchTerm(e.target.value); 
-                    onChange(e.target.value); // 🔥 關鍵修改：允許手動輸入
+                    onChange(e.target.value); 
                     setIsOpen(true); 
                 }} 
             />
@@ -135,7 +132,6 @@ const SearchableSelect = ({ options, value, onChange, placeholder }) => {
     );
 };
 
-// --- 預設資料 (避免第一次載入時空白) ---
 const DEFAULT_CLASS_DB = {
     "Necromancer": { label: "死靈法師", icon: "💀", base: [], temper: [], aspects: [] },
     "Barbarian": { label: "野蠻人", icon: "🪓", base: [], temper: [], aspects: [] },
@@ -153,16 +149,18 @@ function App() {
     const [selectedClass, setSelectedClass] = useState(() => localStorage.getItem("d4_selected_class") || "Necromancer");
     const [classDB, setClassDB] = useState(DEFAULT_CLASS_DB);
     const [dbLoading, setDbLoading] = useState(true);
-
     const [baseList, setBaseList] = useState([]);
     const [temperList, setTemperList] = useState([]);
     
     const [target, setTarget] = useState(() => { const saved = localStorage.getItem("d4_target_v8"); return saved ? JSON.parse(saved) : DEFAULT_TARGET; });
     const [drop, setDrop] = useState({ itemPower: 800, baseAffixes: [{name:"",isGA:false,value:""},{name:"",isGA:false,value:""},{name:"",isGA:false,value:""}], temperAffixes: [{name:"",value:""},{name:"",value:""}], aspect: { name: "", value: "" } });
     const [result, setResult] = useState({ score: 0, tierLabel: "等待計算...", tierColor: "text-gray-500", barColor: "bg-gray-700", matched_affixes: [], isBrick: false });
+    
+    // UI 狀態
     const [showSaveToast, setShowSaveToast] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [ocrLoading, setOcrLoading] = useState(false);
+    const [loading, setLoading] = useState(false); // 計算分數的 loading
+    const [ocrLoading, setOcrLoading] = useState(false); // OCR 的 loading
+    const cameraInputRef = useRef(null); // 👈 相機的 Ref
 
     const firstRender = useRef(true);
 
@@ -174,7 +172,7 @@ function App() {
                 const res = await fetch(`${API_BASE}/affixes`);
                 if (res.ok) {
                     const data = await res.json();
-                    setClassDB(prev => ({ ...prev, ...data })); // 合併預設與抓到的資料
+                    setClassDB(prev => ({ ...prev, ...data }));
                 }
             } catch (err) {
                 console.error("無法載入資料庫", err);
@@ -193,6 +191,7 @@ function App() {
         localStorage.setItem("d4_selected_class", selectedClass);
     }, [selectedClass, classDB]);
 
+    // 3. 自動存檔
     useEffect(() => {
         if (firstRender.current) { firstRender.current = false; return; }
         localStorage.setItem("d4_target_v8", JSON.stringify(target));
@@ -201,7 +200,53 @@ function App() {
         return () => clearTimeout(t);
     }, [target]);
 
-    // 🔥 全域貼上監聽器 (OCR)
+    // 🔥 核心邏輯：處理圖片上傳 (共用)
+    const handleImageUpload = async (file) => {
+        setOcrLoading(true);
+        try {
+            const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch(`${API_BASE}/ocr`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const newDrop = { ...drop };
+                
+                if (data.item_power) newDrop.itemPower = data.item_power;
+                if (data.base_affixes) {
+                    data.base_affixes.forEach((item, idx) => {
+                        if (idx < 3) {
+                            newDrop.baseAffixes[idx] = { name: item.name || "", isGA: item.isGA || false, value: item.value || "" };
+                        }
+                    });
+                }
+                if (data.temper_affixes) {
+                    data.temper_affixes.forEach((item, idx) => {
+                        if (idx < 2) {
+                            newDrop.temperAffixes[idx] = { name: item.name || "", value: item.value || "" };
+                        }
+                    });
+                }
+                if (data.aspect) {
+                    newDrop.aspect = { name: data.aspect.name || "", value: data.aspect.value || "" };
+                }
+                setDrop(newDrop);
+            } else {
+                alert("辨識失敗，請確認截圖清晰");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("伺服器連線錯誤");
+        }
+        setOcrLoading(false);
+    };
+
+    // 🔥 監聽貼上事件 (Ctrl+V)
     useEffect(() => {
         const handlePaste = async (e) => {
             const items = e.clipboardData.items;
@@ -212,66 +257,29 @@ function App() {
                     break;
                 }
             }
-            if (!file) return;
-
-            setOcrLoading(true);
-            try {
-                const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
-                const formData = new FormData();
-                formData.append("file", file);
-
-                const res = await fetch(`${API_BASE}/ocr`, {
-                    method: "POST",
-                    body: formData,
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    const newDrop = { ...drop };
-                    
-                    if (data.item_power) newDrop.itemPower = data.item_power;
-                    
-                    if (data.base_affixes) {
-                        data.base_affixes.forEach((item, idx) => {
-                            if (idx < 3) {
-                                newDrop.baseAffixes[idx] = { 
-                                    name: item.name || "", 
-                                    isGA: item.isGA || false, 
-                                    value: item.value || "" 
-                                };
-                            }
-                        });
-                    }
-                    if (data.temper_affixes) {
-                        data.temper_affixes.forEach((item, idx) => {
-                            if (idx < 2) {
-                                newDrop.temperAffixes[idx] = { 
-                                    name: item.name || "", 
-                                    value: item.value || "" 
-                                };
-                            }
-                        });
-                    }
-                    if (data.aspect) {
-                        newDrop.aspect = {
-                            name: data.aspect.name || "",
-                            value: data.aspect.value || ""
-                        };
-                    }
-                    setDrop(newDrop);
-                } else {
-                    alert("辨識失敗，請確認截圖清晰");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("伺服器連線錯誤 (請確認後端是否已設定 GOOGLE_API_KEY)");
-            }
-            setOcrLoading(false);
+            if (file) handleImageUpload(file);
         };
-
         window.addEventListener("paste", handlePaste);
         return () => window.removeEventListener("paste", handlePaste);
-    }, [drop]);
+    }, [drop]); // drop 依賴確保更新
+
+    // 🔥 處理相機/檔案選擇
+    const handleCameraCapture = (event) => {
+        const file = event.target.files[0];
+        if (file) handleImageUpload(file);
+        event.target.value = null; // 重置 input 讓同一張圖可以重複選
+    };
+
+    // 🔥 處理拖放
+    const onDrop = useCallback(acceptedFiles => {
+        if (acceptedFiles?.length > 0) handleImageUpload(acceptedFiles[0]);
+    }, []);
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+        onDrop, 
+        accept: {'image/*': []}, 
+        multiple: false,
+        noClick: true // 禁用預設點擊，因為我們有自己的按鈕
+    });
 
     const calculateScore = async () => {
         setLoading(true);
@@ -304,12 +312,10 @@ function App() {
             if (res.ok) {
                 setResult(await res.json());
             } else {
-                console.error("Server Error:", res.status);
                 setResult(prev => ({ ...prev, tierLabel: `格式錯誤 (${res.status})` }));
             }
         } catch (err) {
-            console.error(err);
-            setResult(prev => ({ ...prev, tierLabel: "後端離線", matched_affixes: ["請確認 python main.py 是否執行中 (或稍等1分鐘讓雲端喚醒)"] }));
+            setResult(prev => ({ ...prev, tierLabel: "後端離線", matched_affixes: ["請確認伺服器狀態"] }));
         }
         setLoading(false);
     };
@@ -349,6 +355,60 @@ function App() {
                 }
             </div>
 
+            {/* 🔥🔥🔥 新增：OCR 圖片上傳區 (包含相機) 🔥🔥🔥 */}
+            <div className="w-full bg-slate-800 p-6 rounded-xl border border-slate-700 mb-8 shadow-lg">
+                <h2 className="text-xl font-semibold mb-4 text-blue-400 flex items-center gap-2">
+                    <CameraIcon className="h-6 w-6" /> 智慧截圖辨識 (AI Powered)
+                </h2>
+
+                {/* 隱藏的相機 Input */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    ref={cameraInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleCameraCapture}
+                />
+
+                <div 
+                    {...getRootProps()} 
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors relative ${
+                        isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-slate-600 hover:border-blue-400 hover:bg-slate-700/50'
+                    }`}
+                >
+                    <input {...getInputProps()} />
+                    
+                    {ocrLoading ? (
+                        <div className="flex flex-col items-center justify-center text-blue-400">
+                            <ArrowPathIcon className="h-10 w-10 animate-spin mb-4" />
+                            <p className="text-lg font-semibold">AI 正在分析...</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center">
+                            <PhotoIcon className="h-12 w-12 mx-auto text-slate-500 mb-4" />
+                            <p className="text-lg text-slate-300 mb-2">拖放截圖 / Ctrl+V 貼上</p>
+                            
+                            <p className="text-slate-600 text-sm mb-4">- 或 -</p>
+
+                            {/* 這是你的新按鈕 */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    cameraInputRef.current.click();
+                                }}
+                                className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition-transform transform hover:scale-105 active:scale-95"
+                            >
+                                <CameraIcon className="h-6 w-6 mr-2" />
+                                拍照 / 選擇圖片
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+            {/* 🔥🔥🔥 結束 🔥🔥🔥 */}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
                 <div className="bg-slate-900 p-6 rounded-xl diablo-border border-l-4 border-blue-600">
                     <h2 className="text-xl font-bold text-blue-400 mb-4 section-header">1. 設定目標</h2>
@@ -357,11 +417,10 @@ function App() {
                     <div className="space-y-2 border-t border-slate-700 pt-4">
                         <h3 className="text-sm text-orange-400 font-bold">🔥 特效</h3>
                         <div className="grid grid-cols-12 gap-2 items-center">
-                            {/* 🔥 這裡換成了 SearchableSelect 🔥 */}
                             <div className="col-span-6 relative">
                                 <SearchableSelect 
                                     options={classDB[selectedClass]?.aspects || []} 
-                                    placeholder="搜尋威能..." 
+                                    placeholder="搜尋精華..." 
                                     value={target.aspect.name} 
                                     onChange={v=>handleTargetChange('aspect',null,'name',v)} 
                                 />
@@ -402,14 +461,12 @@ function App() {
                 
                 <div className="w-full md:w-2/3 bg-slate-900/50 p-4 rounded border border-slate-700/50">
                     <div className="text-xs text-slate-500 mb-2 text-center">💡 小撇步：點擊下方的詞綴，可以模擬 S11 精鑄 (Q25/晉階) 喔！</div>
-                    
                     <ul className="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto pr-2">
                         {result.matched_affixes?.map((log, idx) => (
                             <MasterworkingItem key={idx} text={log} />
                         ))}
                     </ul>
                 </div>
-                
                 </div>
             </div>
             

@@ -98,7 +98,7 @@ def update_database():
         "icon": "💀",
         "base": ["智力", "最大生命", ...],
         "temper": ["【武器】骨矛額外傷害", ...],
-        "aspects": ["加速威能", "月亮升起之威能", ...]
+        "aspects": ["加速精華", "月亮升起之精華", ...]
       }},
       ... (Detect other classes)
     }}
@@ -110,7 +110,7 @@ def update_database():
        - e.g., "Vulnerable" -> "易傷"
        - e.g., "Overpower" -> "壓制"
        - e.g., "Lucky Hit" -> "幸運觸發"
-    3. **Legendary Aspects**: Must end with "威能" (e.g., "Aspect of Might" -> "力量之威能").
+    3. **Legendary Aspects**: Must end with "精華" (e.g., "Aspect of Might" -> "力量之精華").
     4. **Tempering**: Keep it concise (e.g., "Chance to cast Bone Spear twice" -> "機率兩次骨矛").
     5. Return ONLY raw JSON string.
     
