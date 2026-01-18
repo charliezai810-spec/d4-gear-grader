@@ -26,7 +26,8 @@ if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 
 # --- 👇 這裡就是你要的功能 (一定要放在外面！) 👇 ---
-
+class ChatRequest(BaseModel):
+    message: str
 def load_db():
     """讀取 affixes.json 資料庫"""
     try:
@@ -53,7 +54,31 @@ def get_affixes():
     return load_db()
 
 # --- 👆 你的功能結束 👆 ---
-
+@app.post("/chat")
+async def chat_with_ai(request: ChatRequest):
+    if not GOOGLE_API_KEY:
+        return {"reply": "❌ 伺服器沒有設定 API Key，無法聊天。"}
+    
+    try:
+        # 這裡設定 AI 的人設
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = f"""
+        你是一位精通《暗黑破壞神 4 (Diablo 4)》的資深專家與數據分析師。
+        你的語氣應該專業、熱情，偶爾帶一點遊戲內的幽默（例如引用涅法雷姆、莉莉絲等梗）。
+        
+        玩家問你：{request.message}
+        
+        請用繁體中文回答，針對遊戲機制、裝備搭配、流派建構給出建議。
+        如果玩家問的不是暗黑破壞神相關的問題，請幽默地把話題拉回來。
+        """
+        
+        response = model.generate_content(prompt)
+        return {"reply": response.text}
+    
+    except Exception as e:
+        print(f"Chat Error: {e}")
+        return {"reply": "聖休亞瑞的連線似乎中斷了... 💀"}
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...)):
     """原本的 OCR 功能"""
