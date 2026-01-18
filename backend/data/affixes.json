@@ -270,7 +270,7 @@
         ]
     },
     "Sorcerer": {
-        "label": "法師",
+        "label": "魔法使",
         "icon": "✨",
         "base": [],
         "temper": [],
@@ -310,7 +310,7 @@
         ]
     },
     "Spiritborn": {
-        "label": "魂裔",
+        "label": "魂靈師",
         "icon": "👻",
         "base": [],
         "temper": [],
