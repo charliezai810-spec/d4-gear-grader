@@ -1,5 +1,6 @@
 import os
 import json
+from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
