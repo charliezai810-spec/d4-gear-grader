@@ -62,7 +62,7 @@ async def chat_with_ai(request: ChatRequest):
     
     try:
         # 這裡設定 AI 的人設
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         prompt = f"""
         你是一位精通《暗黑破壞神 4 (Diablo 4)》的資深專家與數據分析師。
@@ -89,7 +89,7 @@ async def ocr_image(file: UploadFile = File(...)):
     
     try:
         content = await file.read()
-        model = genai.GenerativeModel('gemini-1.5-flash') 
+        model = genai.GenerativeModel('gemini-2.5-flash') 
         # 如果你的帳號能用 2.0，也可以改這裡: 'models/gemini-2.0-flash'
         
         prompt = """
