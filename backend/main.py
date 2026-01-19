@@ -79,7 +79,8 @@ async def chat_with_ai(request: ChatRequest):
     
     except Exception as e:
         print(f"Chat Error: {e}")
-        return {"reply": "聖休亞瑞的連線似乎中斷了... 💀"}
+        # 把錯誤直接回傳給前端顯示
+        return {"reply": f"☠️ 致命錯誤：{str(e)}"}
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...)):
     """原本的 OCR 功能"""
