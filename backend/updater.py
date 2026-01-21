@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+import google.genai as genai
 from dotenv import load_dotenv  # 👈 新增這行
 
 # 👇 載入 .env 檔案裡的秘密

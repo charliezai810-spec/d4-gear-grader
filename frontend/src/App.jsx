@@ -11,7 +11,7 @@ const UPDATE_LOG = `
 - 🤖 新增：AI 聊天助手 (聖休亞瑞智庫)
 - 📸 新增：手機/平板直接拍照辨識按鈕
 2026/1/10 
-- ✨ 優化：特效 (威能) 現在支援搜尋選單了！
+- ✨ 優化：特效 (精華) 現在支援搜尋選單了！
 2026/1/7
 - 📖 新增使用教學指南
 `;
@@ -135,7 +135,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder }) => {
 const DEFAULT_CLASS_DB = {
     "Necromancer": { label: "死靈法師", icon: "💀", base: [], temper: [], aspects: [] },
     "Barbarian": { label: "野蠻人", icon: "🪓", base: [], temper: [], aspects: [] },
-    "Sorcerer": { label: "秘術師", icon: "🔮", base: [], temper: [], aspects: [] },
+    "Sorcerer": { label: "魔法使", icon: "🔮", base: [], temper: [], aspects: [] },
     "Paladin": { label: "聖騎士", icon: "🛡️", base: [], temper: [], aspects: [] },
     "Rogue": { label: "俠盜", icon: "🗡️", base: [], temper: [], aspects: [] },
     "Druid": { label: "德魯伊", icon: "🐻", base: [], temper: [], aspects: [] },
@@ -146,6 +146,9 @@ const DEFAULT_TARGET = { itemPowerCap: 800, baseAffixes: [{name:"",isGA:false,mi
 
 
 function App() {
+    const API_BASE = import.meta.env.DEV 
+        ? "http://127.0.0.1:8000" 
+        : "https://d4-gear-grader.onrender.com";
     // 👇 2. 新增分頁狀態 (grader = 評分器, chat = 聊天室)
     const [activeTab, setActiveTab] = useState('grader');
 
@@ -171,7 +174,7 @@ function App() {
     useEffect(() => {
         const fetchDB = async () => {
             try {
-                const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
+                const API_BASE = import.meta.env.DEV ? API_BASE : API_BASE;
                 const res = await fetch(`${API_BASE}/affixes`);
                 if (res.ok) {
                     const data = await res.json();
@@ -207,7 +210,7 @@ function App() {
     const handleImageUpload = async (file) => {
         setOcrLoading(true);
         try {
-            const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
+            const API_BASE = import.meta.env.DEV ? API_BASE : API_BASE;
             const formData = new FormData();
             formData.append("file", file);
 
@@ -269,7 +272,7 @@ function App() {
         setLoading(true);
         setResult(prev => ({ ...prev, tierLabel: "計算中..." }));
         try {
-            const API_BASE = import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://d4-gear-grader.onrender.com";
+            const API_BASE = import.meta.env.DEV ? API_BASE : API_BASE;
             const clean = (item) => ({
                 ...item,
                 min: item.min === "" ? null : Number(item.min),
@@ -394,7 +397,7 @@ function App() {
                             <div className="space-y-2 border-t border-slate-700 pt-4">
                                 <h3 className="text-sm text-orange-400 font-bold">🔥 特效</h3>
                                 <div className="grid grid-cols-12 gap-2 items-center">
-                                    <div className="col-span-6 relative"><SearchableSelect options={classDB[selectedClass]?.aspects || []} placeholder="搜尋威能..." value={target.aspect.name} onChange={v=>handleTargetChange('aspect',null,'name',v)} /></div>
+                                    <div className="col-span-6 relative"><SearchableSelect options={classDB[selectedClass]?.aspects || []} placeholder="搜尋精華..." value={target.aspect.name} onChange={v=>handleTargetChange('aspect',null,'name',v)} /></div>
                                     <div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Min" value={target.aspect.min} onChange={e=>handleTargetChange('aspect',null,'min',e.target.value)}/></div>
                                     <div className="col-span-3"><input type="number" className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-center text-white" placeholder="Max" value={target.aspect.max} onChange={e=>handleTargetChange('aspect',null,'max',e.target.value)}/></div>
                                 </div>
